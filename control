@@ -1,0 +1,9 @@
+Package: com.sharedRoutine.sbpower
+Name: SBPower
+Depends: mobilesubstrate libactivator
+Version: 1.0
+Architecture: iphoneos-arm
+Description: Displays an AlertView with Free Memory, Respring, Reboot, Safe Mode, Lock Buttons
+Maintainer: sharedRoutine
+Author: sharedRoutine
+Section: Tweaks
