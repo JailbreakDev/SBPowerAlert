@@ -12,18 +12,26 @@
 
 @end
 
+unsigned long getAvailableMemory() {
 
-int getAvailableMemory() {
-
-        vm_size_t pageSize;
-        host_page_size(mach_host_self(), &pageSize);
-        struct vm_statistics vmStats;
-        mach_msg_type_number_t infoCount = sizeof(vmStats);
-        host_statistics(mach_host_self(), HOST_VM_INFO, (host_info_t)&vmStats, &infoCount);
-        int availMem = vmStats.free_count + vmStats.inactive_count;
-
-        return (availMem * pageSize) / 1024 / 1024;
+#ifdef __LP64__
+    vm_size_t pageSize;
+    host_page_size(mach_host_self(), &pageSize);
+    struct vm_statistics64 vmStats;
+    mach_msg_type_number_t infoCount = sizeof(vmStats);
+    host_statistics64(mach_host_self(), HOST_VM_INFO64, (host_info_t)&vmStats, &infoCount);
+    int availMem = vmStats.free_count + vmStats.inactive_count;
+#else
+    vm_size_t pageSize;
+    host_page_size(mach_host_self(), &pageSize);
+    struct vm_statistics vmStats;
+    mach_msg_type_number_t infoCount = sizeof(vmStats);
+    host_statistics(mach_host_self(), HOST_VM_INFO, (host_info_t)&vmStats, &infoCount);
+    int availMem = vmStats.free_count + vmStats.inactive_count;
+#endif
+    return (unsigned long)(availMem * pageSize) / 1024 / 1024;
 }
+
 
 
 @interface SBPower : NSObject<LAListener, UIAlertViewDelegate> {
@@ -95,7 +103,7 @@ int getAvailableMemory() {
         if (![self dismiss]) {
 av = [[UIAlertView alloc] init];
          av.delegate = self;
-        av.title = [NSString stringWithFormat:@"%d MB available",getAvailableMemory()];
+        av.title = [NSString stringWithFormat:@"%lu MB available",getAvailableMemory()];
         [av addButtonWithTitle:@"Reboot"];
         [av addButtonWithTitle:@"Power Off"];
         [av addButtonWithTitle:@"Respring"];
