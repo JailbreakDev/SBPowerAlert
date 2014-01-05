@@ -1,0 +1,9 @@
+Package: com.sharedRoutine.sbpower
+Name: SBPowerAlert
+Depends: mobilesubstrate, libactivator
+Version: 2.0
+Architecture: iphoneos-arm
+Description: Displays an AlertView with Free Memory, Respring, Reboot, Safe Mode, Lock Buttons. It also displays Disk Usage, Wifi Info and iOS Version. A Small SBSettings replace
+Maintainer: sharedRoutine
+Author: sharedRoutine
+Section: Tweaks
