@@ -2,15 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>entry</key>
-	<dict>
-		<key>cell</key>
-		<string>PSLinkCell</string>
-		<key>label</key>
-		<string>SBPowerAlert Settings</string>
-		<key>icon</key>
-		<string>sbpoweralert.png</string>
-	</dict>
 	<key>items</key>
 	<array>
 		<dict>
@@ -23,13 +14,31 @@
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>label</key>
+			<string>Activator Settings</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSLinkCell</string>
+			<key>label</key>
+			<string>Activation Methods</string>
+			<key>isController</key>
+			<true/>
+			<key>bundle</key>
+			<string>LibActivator</string>
+			<key>activatorListener</key>
+			<string>com.sharedroutine.sbpoweralert</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
 			<string>Information Settings</string>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
 			<key>default</key>
-			<false/>
+			<true/>
 			<key>defaults</key>
 			<string>com.sharedRoutine.sbpoweralert</string>
 			<key>key</key>
@@ -57,7 +66,7 @@
 			<key>cell</key>
 			<string>PSSwitchCell</string>
 			<key>default</key>
-			<false/>
+			<true/>
 			<key>defaults</key>
 			<string>com.sharedRoutine.sbpoweralert</string>
 			<key>key</key>
@@ -71,7 +80,7 @@
 			<key>cell</key>
 			<string>PSSwitchCell</string>
 			<key>default</key>
-			<false/>
+			<true/>
 			<key>defaults</key>
 			<string>com.sharedRoutine.sbpoweralert</string>
 			<key>key</key>
@@ -85,7 +94,7 @@
 			<key>cell</key>
 			<string>PSSwitchCell</string>
 			<key>default</key>
-			<false/>
+			<true/>
 			<key>defaults</key>
 			<string>com.sharedRoutine.sbpoweralert</string>
 			<key>key</key>
@@ -119,7 +128,7 @@
 			<key>cell</key>
 			<string>PSSwitchCell</string>
 			<key>default</key>
-			<false/>
+			<true/>
 			<key>defaults</key>
 			<string>com.sharedRoutine.sbpoweralert</string>
 			<key>key</key>
@@ -133,7 +142,7 @@
 			<key>cell</key>
 			<string>PSSwitchCell</string>
 			<key>default</key>
-			<false/>
+			<true/>
 			<key>defaults</key>
 			<string>com.sharedRoutine.sbpoweralert</string>
 			<key>key</key>
@@ -147,7 +156,7 @@
 			<key>cell</key>
 			<string>PSSwitchCell</string>
 			<key>default</key>
-			<false/>
+			<true/>
 			<key>defaults</key>
 			<string>com.sharedRoutine.sbpoweralert</string>
 			<key>key</key>
@@ -161,7 +170,7 @@
 			<key>cell</key>
 			<string>PSSwitchCell</string>
 			<key>default</key>
-			<false/>
+			<true/>
 			<key>defaults</key>
 			<string>com.sharedRoutine.sbpoweralert</string>
 			<key>key</key>
@@ -184,6 +193,24 @@
 			<string>Show Lock Button</string>
 			<key>PostNotification</key>
 			<string>com.sharedRoutine.settingschanged</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Support Me</string>
+			<key>footerText</key>
+			<string>If you like SBPowerAlert you can support me using this Button. Any Support is appreciated.</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSButtonCell</string>
+			<key>action</key>
+			<string>supportMe</string>
+			<key>label</key>
+			<string>Support Me</string>
+			<key>icon</key>
+			<string>paypal</string>
 		</dict>
 	</array>
 	<key>title</key>

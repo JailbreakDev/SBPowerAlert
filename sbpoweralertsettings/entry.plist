@@ -1,0 +1,10 @@
+{
+	entry = {
+		bundle = SBPowerAlertSettings;
+		cell = PSLinkCell;
+		detail = "SBPowerAlertSettingsListController";
+		icon = "sbpoweralert.png";
+		isController = 1;
+		label = "SBPowerAlert Settings";
+	};
+}
