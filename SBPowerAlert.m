@@ -258,6 +258,13 @@ NSString *currentWifiSSID() {
         if (showLock) {
             [av addButtonWithTitle:@"Lock"];
         }
+
+        if (!showDataIP && !showWifiNetwork && !showWifiIP && !showRam && !showStorage && !showVersion) { //no info
+        	[av addButtonWithTitle:@"Cancel"];
+        	[av show];
+        	[event setHandled:YES];
+        	return;
+        }
         
         UITextView *textView = [[UITextView alloc] initWithFrame:CGRectMake(0,0,255,100)];
         textView.clipsToBounds = YES;
@@ -274,7 +281,11 @@ NSString *currentWifiSSID() {
         [info release];
         [av addButtonWithTitle:@"Cancel"];
         [av show];
+        
+        if (showDataIP) {
         [self performSelector:@selector(updateText:) withObject:textView afterDelay:0];
+        }
+
         [event setHandled:YES];
 
     }
