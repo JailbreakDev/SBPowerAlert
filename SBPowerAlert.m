@@ -1,14 +1,14 @@
-#import <libactivator/libactivator.h>
-#import <UIKit/UIKit.h>
-#import <mach/mach_host.h>
-#import <mach/mach.h>
-#import <unistd.h>
-#import <ifaddrs.h>
-#import <arpa/inet.h>
-#import <QuartzCore/QuartzCore.h>
-#include <sys/param.h>
-#include <sys/mount.h>
 #import <SystemConfiguration/CaptiveNetwork.h>
+#import <libactivator/libactivator.h>
+#import <QuartzCore/QuartzCore.h>
+#import <mach/mach_host.h>
+#import <UIKit/UIKit.h>
+#import <mach/mach.h>
+#import <arpa/inet.h>
+#import <sys/param.h>
+#import <sys/mount.h>
+#import <ifaddrs.h>
+#import <unistd.h>
 #import "MobileGestalt.h"
 #import "NSHost.h"
 
@@ -30,7 +30,7 @@ static BOOL showRespring;
 static BOOL showSafeMode;
 static BOOL showLock;
 
-//SpringBoard methods
+//SpringBoard methods to reboot, power down and respring
 @interface UIApplication(SBAdditions)
 -(void)_rebootNow;
 -(void)_powerDownNow;
@@ -214,7 +214,7 @@ NSString *currentWifiSSID() {
         CFStringRef deviceName = MGCopyAnswer(kMGUserAssignedDeviceName);
         
         if (showDataIP) {
-            [info appendFormat:@"Data IP: Loading...\n"];//,];
+            [info appendFormat:@"Data IP: Loading...\n"];
         }
             
         if (showWifiNetwork) {
@@ -283,7 +283,7 @@ NSString *currentWifiSSID() {
         [av show];
         
         if (showDataIP) {
-        [self performSelector:@selector(updateText:) withObject:textView afterDelay:0];
+        	[self performSelector:@selector(updateText:) withObject:textView afterDelay:0];
         }
 
         [event setHandled:YES];
@@ -292,9 +292,14 @@ NSString *currentWifiSSID() {
 }
 
 -(void)updateText:(UITextView *)textView {
-	NSString *text = [textView text];
-	NSString *dataIP = [[NSHost currentHost] addresses][0];
-	[textView setText:[text stringByReplacingOccurrencesOfString:@"Loading..." withString:dataIP]];
+	dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0ul);
+    dispatch_async(queue, ^{
+    	NSString *text = [textView text];
+		NSString *dataIP = [[NSHost currentHost] addresses][0];
+   	 	dispatch_sync(dispatch_get_main_queue(), ^{
+            [textView setText:[text stringByReplacingOccurrencesOfString:@"Loading..." withString:dataIP]];
+      	});
+    });
 }
 
 -(void)activator:(LAActivator *)activator abortEvent:(LAEvent *)event {
