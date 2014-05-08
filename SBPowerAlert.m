@@ -5,6 +5,7 @@
 #import <unistd.h>
 #import <ifaddrs.h>
 #import <arpa/inet.h>
+#import <QuartzCore/QuartzCore.h>
 #include <sys/param.h>
 #include <sys/mount.h>
 #import <SystemConfiguration/CaptiveNetwork.h>
@@ -14,13 +15,26 @@
 //settings path
 #define SETTINGS_PATH @"/var/mobile/Library/Preferences/com.sharedRoutine.sbpoweralert.plist"
 
+//information
+static BOOL showDataIP;
+static BOOL showWifiNetwork;
+static BOOL showWifiIP;
+static BOOL showRam;
+static BOOL showStorage;
+static BOOL showVersion;
+
+//buttons
+static BOOL showReboot;
+static BOOL showPowerOff;
+static BOOL showRespring;
+static BOOL showSafeMode;
+static BOOL showLock;
+
 //SpringBoard methods
 @interface UIApplication(SBAdditions)
-
 -(void)_rebootNow;
 -(void)_powerDownNow;
 -(void)_relaunchSpringBoardNow;
-
 @end
 
 @interface SBPowerAlert : NSObject <LAListener, UIAlertViewDelegate> {
@@ -29,20 +43,16 @@
     UIAlertView *av;
     NSDictionary *settingsDict;
 }
-
 -(void)settingsChanged;
-
 @end
 
 //callback of the Notification
 static void settingsChangedCallBack(CFNotificationCenterRef center, void *observer, CFStringRef name, const void *object, CFDictionaryRef userIfo) {
-    
     [(__bridge SBPowerAlert *)observer settingsChanged];
 }
 
 //gets available memory for 32 and 64bit
-int getAvailableMemory() {
-    
+long long getAvailableMemory() {
     vm_size_t pageSize;
     host_page_size(mach_host_self(),&pageSize);
 #ifdef __LP64__
@@ -51,13 +61,13 @@ int getAvailableMemory() {
     host_statistics64(mach_host_self(), HOST_VM_INFO64, (host_info64_t)&vmStats, &infoCount);
     int availMem = vmStats.free_count + vmStats.inactive_count;
     pageSize /= 4;
-    return ((availMem * pageSize) / 1024 / 1024);
+    return (availMem * pageSize);
 #else
     struct vm_statistics vmStats;
     mach_msg_type_number_t infoCount = sizeof(vmStats);
     host_statistics(mach_host_self(), HOST_VM_INFO, (host_info_t)&vmStats, &infoCount);
     int availMem = vmStats.free_count + vmStats.inactive_count;
-    return (int)(availMem * pageSize) / 1024 / 1024;
+    return (availMem * pageSize);
 #endif
     
 }
@@ -105,71 +115,69 @@ NSString *currentWifiSSID() {
     return ssid;
 }
 
-
 @implementation SBPowerAlert
 
 //reload settings dictionary
 -(void)settingsChanged {
     
     if (settingsDict) {
-        
-        [settingsDict release];
         settingsDict = nil;
     }
     
     settingsDict = [NSDictionary dictionaryWithContentsOfFile:SETTINGS_PATH] ?: [NSDictionary dictionary];
+
+	showDataIP = [settingsDict[@"kShowDataIP"] boolValue];
+	showWifiNetwork = settingsDict[@"kShowWifiNetwork"] ? [settingsDict[@"kShowWifiNetwork"] boolValue] : TRUE;
+	showWifiIP = settingsDict[@"kShowWifiIP"] ? [settingsDict[@"kShowWifiIP"] boolValue] : TRUE;
+	showRam = settingsDict[@"kShowRAM"] ? [settingsDict[@"kShowRAM"] boolValue] : TRUE;
+	showStorage = settingsDict[@"kShowStorage"] ? [settingsDict[@"kShowStorage"] boolValue] : TRUE;
+	showVersion = [settingsDict[@"kShowiOSVer"] boolValue];
+
+	showReboot = settingsDict[@"kShowRebootButton"] ? [settingsDict[@"kShowRebootButton"] boolValue] : TRUE;
+	showPowerOff = settingsDict[@"kShowPowerOffButton"] ? [settingsDict[@"kShowPowerOffButton"] boolValue] : TRUE;
+	showRespring = settingsDict[@"kShowRespringButton"] ? [settingsDict[@"kShowRespringButton"] boolValue] : TRUE;
+	showSafeMode = settingsDict[@"kShowSafeModeButton"] ? [settingsDict[@"kShowSafeModeButton"] boolValue] : TRUE;
+	showLock = [settingsDict[@"kShowLockButton"] boolValue];
 }
 
-- (BOOL)dismiss
-{
+-(BOOL)dismiss {
     if (av) {
         [av dismissWithClickedButtonIndex:[av cancelButtonIndex] animated:YES];
         [av release];
         av = nil;
         return YES;
     }
-    
-    
     return NO;
 }
 
 //do actions depending on which button was clicked
-- (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)index {
-    
+-(void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)index {
+
     NSString *btnTitle = [alertView buttonTitleAtIndex:index];
-    
+
     if ([btnTitle isEqualToString:@"Cancel"]) {
-        
         [self dismiss];
+        return;
     }
     
     if ([btnTitle isEqualToString:@"Reboot"]) {
-        
         [[UIApplication sharedApplication] _rebootNow];
-        
     }
     
     if ([btnTitle isEqualToString:@"Power Off"]) {
-        
-        [[UIApplication sharedApplication] _powerDownNow];
-        
+        [[UIApplication sharedApplication] _powerDownNow]; 
     }
     
     if ([btnTitle isEqualToString:@"Respring"]) {
-        
         [[UIApplication sharedApplication] _relaunchSpringBoardNow];
-        
     }
     
     if ([btnTitle isEqualToString:@"Safe Mode"]) {
-        
         system("touch /var/mobile/Library/Preferences/com.saurik.mobilesubstrate.dat");
-        system("killall SpringBoard");
-        
+        system("killall SpringBoard");  
     }
     
     if ([btnTitle isEqualToString:@"Lock"]) {
-        
         [[LAActivator sharedInstance] sendEvent:nil toListenerWithName:@"libactivator.system.sleepbutton"];
     }
     
@@ -177,15 +185,13 @@ NSString *currentWifiSSID() {
 }
 
 
-- (void)alertView:(UIAlertView *)alertView willDismissWithButtonIndex:(NSInteger)buttonIndex
-{
+-(void)alertView:(UIAlertView *)alertView willDismissWithButtonIndex:(NSInteger)buttonIndex {
     [av release];
     av = nil;
 }
 
 //shows the alert and stuff
-- (void)activator:(LAActivator *)activator receiveEvent:(LAEvent *)event
-{
+-(void)activator:(LAActivator *)activator receiveEvent:(LAEvent *)event {
     
     if (![self dismiss]) {
         
@@ -193,8 +199,8 @@ NSString *currentWifiSSID() {
         av.delegate = self;
         
         NSMutableString *info = [[NSMutableString alloc] init];
-        
-        settingsDict = [NSDictionary dictionaryWithContentsOfFile:SETTINGS_PATH] ?: [NSDictionary dictionary];
+
+   		[self settingsChanged];
         
         struct statfs rootFSStats;
         struct statfs fsStats;
@@ -207,123 +213,102 @@ NSString *currentWifiSSID() {
         CFStringRef productVersion = MGCopyAnswer(kMGProductVersion);
         CFStringRef deviceName = MGCopyAnswer(kMGUserAssignedDeviceName);
         
-        
-        if ([[settingsDict objectForKey:@"kShowDataIP"] boolValue]) {
-            
-            [info appendFormat:@"Data IP Address: %@\n",[[NSHost currentHost] addresses][0]];
-            
+        if (showDataIP) {
+            [info appendFormat:@"Data IP: Loading...\n"];//,];
         }
-        
-        if ([[settingsDict objectForKey:@"kShowWifiNetwork"] boolValue]) {
             
+        if (showWifiNetwork) {
             [info appendFormat:@"Wi-Fi Network: %@ (%@)\n",currentWifiSSID(), wifiAddr];
-            
         }
-        
-        if ([[settingsDict objectForKey:@"kShowWifiIP"] boolValue]) {
             
+        if (showWifiIP) {
             [info appendFormat:@"Wi-Fi IP Address: %@\n",getIPAddress()];
+        }
             
+        if (showRam) {
+            [info appendFormat:@"%@ of RAM available\n",[NSByteCountFormatter stringFromByteCount:getAvailableMemory() countStyle:NSByteCountFormatterCountStyleMemory]];
         }
         
-        if ([[settingsDict objectForKey:@"kShowRAM"] boolValue]) {
-            
-            [info appendFormat:@"%d MB RAM available\n",getAvailableMemory()];
-            
-        }
-        
-        if ([[settingsDict objectForKey:@"kShowStorage"] boolValue]) {
-            
+        if (showStorage) { 
             [info appendFormat:@"Storage: %.f MB on / - %.f MB on /var\n",availableSpace_r / 1024 / 1024, availableSpace / 1024 / 1024];
-            
         }
-        
-        if ([[settingsDict objectForKey:@"kShowiOSVer"] boolValue]) {
-            
+
+        if (showVersion) {
             [info appendFormat:@"%@ is running iOS %@\n",deviceName, productVersion];
-            
         }
         
-        av.message = info;
+        av.message = @"SBPowerAlert Information";
         
-        
-        if ([[settingsDict objectForKey:@"kShowRebootButton"] boolValue]) {
-            
+        if (showReboot) {
             [av addButtonWithTitle:@"Reboot"];
-            
         }
         
-        if ([[settingsDict objectForKey:@"kShowPowerOffButton"] boolValue]) {
-            
-            [av addButtonWithTitle:@"Power Off"];
-            
+        if (showPowerOff) { 
+        	[av addButtonWithTitle:@"Power Off"];
+        }
+
+        if (showRespring) {
+        	[av addButtonWithTitle:@"Respring"];
         }
         
-        if ([[settingsDict objectForKey:@"kShowRespringButton"] boolValue]) {
-            
-            [av addButtonWithTitle:@"Respring"];
-            
-        }
-        
-        if ([[settingsDict objectForKey:@"kShowSafeModeButton"] boolValue]) {
-            
+        if (showSafeMode) {
             [av addButtonWithTitle:@"Safe Mode"];
-            
         }
         
-        if ([[settingsDict objectForKey:@"kShowLockButton"] boolValue]) {
-            
+        if (showLock) {
             [av addButtonWithTitle:@"Lock"];
-            
         }
         
+        UITextView *textView = [[UITextView alloc] initWithFrame:CGRectMake(0,0,255,100)];
+        textView.clipsToBounds = YES;
+    	[textView setBackgroundColor:[UIColor colorWithWhite:1.0 alpha:0.7]];
+    	[textView.layer setBorderWidth:2.0];
+    	[textView.layer setCornerRadius:4.0];
+    	[textView setText:info];
+    	[textView.layer setBorderColor:[[UIColor grayColor] CGColor]];
+    	[textView setEditable:FALSE];
+    	[textView setTextContainerInset:UIEdgeInsetsMake(5, 5, 5, 5)];
+        [textView.layer setBorderWidth:2.0];
+        [av setValue:textView forKey:@"accessoryView"];
+        [textView release];
+        [info release];
         [av addButtonWithTitle:@"Cancel"];
         [av show];
+        [self performSelector:@selector(updateText:) withObject:textView afterDelay:0];
         [event setHandled:YES];
-        
-        CFRelease(wifiAddr);
-        CFRelease(productVersion);
-        CFRelease(deviceName);
-        
+
     }
 }
 
-- (void)activator:(LAActivator *)activator abortEvent:(LAEvent *)event
-{
-    
+-(void)updateText:(UITextView *)textView {
+	NSString *text = [textView text];
+	NSString *dataIP = [[NSHost currentHost] addresses][0];
+	[textView setText:[text stringByReplacingOccurrencesOfString:@"Loading..." withString:dataIP]];
+}
+
+-(void)activator:(LAActivator *)activator abortEvent:(LAEvent *)event {
     [self dismiss];
 }
 
-- (void)activator:(LAActivator *)activator otherListenerDidHandleEvent:(LAEvent *)event
-{
-    
+-(void)activator:(LAActivator *)activator otherListenerDidHandleEvent:(LAEvent *)event {    
     [self dismiss];
 }
 
-- (void)activator:(LAActivator *)activator receiveDeactivateEvent:(LAEvent *)event
-{
-    
+-(void)activator:(LAActivator *)activator receiveDeactivateEvent:(LAEvent *)event {
     if ([self dismiss])
         [event setHandled:YES];
 }
 
-- (void)dealloc
-{
+-(void)dealloc {
     [av release];
-    [settingsDict release];
     [super dealloc];
 }
 
-//register stuff
-+ (void)load {
-    
-    NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-    // Register our listener
-    CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(),NULL,settingsChangedCallBack,CFSTR("com.sharedRoutine.settingschanged"),NULL,CFNotificationSuspensionBehaviorDeliverImmediately);
-    
-    [[LAActivator sharedInstance] registerListener:[self new] forName:@"com.sharedroutine.sbpoweralert"];
-    
-    [pool release];
++(void)load {
+    	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+    		CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(),NULL,settingsChangedCallBack,CFSTR("com.sharedRoutine.settingschanged"),NULL,CFNotificationSuspensionBehaviorDeliverImmediately);
+    		[[LAActivator sharedInstance] registerListener:[self new] forName:@"com.sharedroutine.sbpoweralert"];
+        [pool release];
 }
 
 @end
