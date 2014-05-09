@@ -12,8 +12,16 @@
 #import "MobileGestalt.h"
 #import "NSHost.h"
 
+#ifndef kCFCoreFoundationVersionNumber_iOS_7_0
+#define kCFCoreFoundationVersionNumber_iOS_7_0 847.20
+#endif
+
 //settings path
 #define SETTINGS_PATH @"/var/mobile/Library/Preferences/com.sharedRoutine.sbpoweralert.plist"
+
+//style
+
+static BOOL originalStyle;
 
 //information
 static BOOL showDataIP;
@@ -126,6 +134,7 @@ NSString *currentWifiSSID() {
     
     settingsDict = [NSDictionary dictionaryWithContentsOfFile:SETTINGS_PATH] ?: [NSDictionary dictionary];
 
+    originalStyle = [settingsDict[@"kOriginalStyle"] boolValue];
 	showDataIP = [settingsDict[@"kShowDataIP"] boolValue];
 	showWifiNetwork = settingsDict[@"kShowWifiNetwork"] ? [settingsDict[@"kShowWifiNetwork"] boolValue] : TRUE;
 	showWifiIP = settingsDict[@"kShowWifiIP"] ? [settingsDict[@"kShowWifiIP"] boolValue] : TRUE;
@@ -266,24 +275,44 @@ NSString *currentWifiSSID() {
         	return;
         }
         
-        UITextView *textView = [[UITextView alloc] initWithFrame:CGRectMake(0,0,255,100)];
-        textView.clipsToBounds = YES;
-    	[textView setBackgroundColor:[UIColor colorWithWhite:1.0 alpha:0.7]];
-    	[textView.layer setBorderWidth:2.0];
-    	[textView.layer setCornerRadius:4.0];
-    	[textView setText:info];
-    	[textView.layer setBorderColor:[[UIColor grayColor] CGColor]];
-    	[textView setEditable:FALSE];
-    	[textView setTextContainerInset:UIEdgeInsetsMake(5, 5, 5, 5)];
-        [textView.layer setBorderWidth:2.0];
-        [av setValue:textView forKey:@"accessoryView"];
-        [textView release];
+        UITextView *textView = NULL;
+        BOOL hasTextfield = FALSE;
+        if (!originalStyle) {
+        	hasTextfield = TRUE;
+        	textView = [[UITextView alloc] initWithFrame:CGRectMake(0,0,255,100)];
+        	textView.clipsToBounds = YES;
+    		[textView setBackgroundColor:[UIColor colorWithWhite:1.0 alpha:0.7]];
+    		[textView.layer setBorderWidth:2.0];
+    		[textView.layer setCornerRadius:4.0];
+    		[textView setText:info];
+    		[textView.layer setBorderColor:[[UIColor grayColor] CGColor]];
+    		[textView setEditable:FALSE];
+    		[textView setTextContainerInset:UIEdgeInsetsMake(5, 5, 5, 5)];
+        	[textView.layer setBorderWidth:2.0];
+        	CGRect frame = textView.frame;
+			CGRect heightTmp = [textView.layoutManager usedRectForTextContainer:[textView textContainer]];
+			frame.size.height = heightTmp.size.height + 10;
+			[textView setFrame:frame];
+			if (kCFCoreFoundationVersionNumber >= kCFCoreFoundationVersionNumber_iOS_7_0) {
+				[av setValue:textView forKey:@"accessoryView"];
+			} else {
+				[av addSubview:textView];
+			}
+        	
+        	[textView release];
+        } else {
+        	[av setMessage:info];
+        }
         [info release];
         [av addButtonWithTitle:@"Cancel"];
         [av show];
-        
+
         if (showDataIP) {
-        	[self performSelector:@selector(updateText:) withObject:textView afterDelay:0];
+        	if (hasTextfield) {
+        		[self performSelector:@selector(updateText:) withObject:textView afterDelay:0];
+        	} else {
+        		[self performSelector:@selector(updateAV:) withObject:av afterDelay:1.0];
+        	}
         }
 
         [event setHandled:YES];
@@ -298,6 +327,18 @@ NSString *currentWifiSSID() {
 		NSString *dataIP = [[NSHost currentHost] addresses][0];
    	 	dispatch_sync(dispatch_get_main_queue(), ^{
             [textView setText:[text stringByReplacingOccurrencesOfString:@"Loading..." withString:dataIP]];
+      	});
+    });
+}
+
+-(void)updateAV:(UIAlertView *)alertView {
+	dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0ul);
+    dispatch_async(queue, ^{
+    	NSString *text = [alertView message];
+		NSString *dataIP = [[NSHost currentHost] addresses][0];
+   	 	dispatch_sync(dispatch_get_main_queue(), ^{
+            NSString *newMessage = [text stringByReplacingOccurrencesOfString:@"Loading..." withString:dataIP];
+            [av setMessage:newMessage];
       	});
     });
 }
