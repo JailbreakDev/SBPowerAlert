@@ -12,7 +12,7 @@
 	return _specifiers;
 }
 -(void)supportMe {
-	[[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=6L4UAHD9UT9RW"]];
+	[[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=SEURCUP448PEA"]];
 }
 @end
 
