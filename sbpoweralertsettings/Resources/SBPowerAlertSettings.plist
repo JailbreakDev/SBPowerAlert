@@ -8,7 +8,7 @@
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>label</key>
-			<string>SBPowerAlert by Jack (@sharedRoutine)</string>
+			<string>SBPowerAlert by Janosch Hübner (@sharedRoutine)</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -200,7 +200,7 @@
 			<key>label</key>
 			<string>Support Me</string>
 			<key>footerText</key>
-			<string>If you like SBPowerAlert you can support me using this Button. Any Support is appreciated.</string>
+			<string>If you like SBPowerAlert you can support me using this Button.</string>
 		</dict>
 		<dict>
 			<key>cell</key>

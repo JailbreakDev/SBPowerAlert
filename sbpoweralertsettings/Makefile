@@ -6,6 +6,7 @@ SBPowerAlertSettings_FILES = SBPowerAlertSettings.mm
 SBPowerAlertSettings_INSTALL_PATH = /Library/PreferenceBundles
 SBPowerAlertSettings_FRAMEWORKS = UIKit
 SBPowerAlertSettings_PRIVATE_FRAMEWORKS = Preferences
+SBPowerAlertSettings_CFLAGS = -w
 
 include $(THEOS_MAKE_PATH)/bundle.mk
 
