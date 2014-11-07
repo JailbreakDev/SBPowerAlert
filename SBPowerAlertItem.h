@@ -16,6 +16,7 @@
 @property (nonatomic,copy) NSString *alertTitle;
 @property (nonatomic,copy) NSString *alertMessage;
 @property (nonatomic,copy,readonly) NSMutableArray *actions;
+@property (nonatomic,copy,readonly) NSMutableArray *buttons;
 @property (nonatomic,assign) id <UIAlertViewDelegate> delegate;
 -(instancetype)initWithTitle:(NSString *)title message:(NSString *)message;
 -(void)addButtonWithTitle:(NSString *)title;

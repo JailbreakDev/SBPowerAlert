@@ -1,7 +1,7 @@
 #import "SBPowerAlertItem.h"
 
 @implementation SBPowerAlertItem
-@synthesize alertTitle,alertMessage,actions = _actions;
+@synthesize alertTitle,alertMessage,actions = _actions,buttons = _buttons;
 
 -(instancetype)initWithTitle:(NSString *)title message:(NSString *)message {
 	self = [super init];
@@ -12,23 +12,16 @@
 		if (!self.actions) {
 			_actions = [[NSMutableArray alloc] init];
 		}
-	}
-
-	return self;
-}
-
--(instancetype)initWithActions:(NSArray *)actionArray title:(NSString *)title message:(NSString *)message {
-	self = [self initWithTitle:title message:message];
-
-	if (self) {
-		_actions = [actionArray mutableCopy];
+		if (!self.buttons) {
+			_buttons = [[NSMutableArray alloc] init];
+		}
 	}
 
 	return self;
 }
 
 -(void)addButtonWithTitle:(NSString *)title {
-	[[self alertSheet] addButtonWithTitle:title];
+	[self.buttons addObject:title];
 }
 
 -(void)addAction:(UIAlertAction *)action {
@@ -39,7 +32,9 @@
 	if (iOS8) {
 		[[self alertController] setMessage:message];
 	} else if (iOS7) {
-		[[self alertSheet] setMessage:message];
+		[self setAlertMessage:message];
+		[[self alertSheet] setMessage:self.alertMessage];
+		[[self alertSheet] setNeedsLayout];
 	}
 }
 
@@ -59,6 +54,10 @@
 		[self alertSheet].delegate = self.delegate ?: self;
 		[self alertSheet].title = self.alertTitle ?: @"";
 		[self alertSheet].message = self.alertMessage ?: @"";
+		for (NSString *buttonTitle in self.buttons) {
+			[[self alertSheet] addButtonWithTitle:buttonTitle];
+		}
+		[[self alertSheet] addButtonWithTitle:@"Cancel"];
 	}
 }
 

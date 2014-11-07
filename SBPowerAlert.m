@@ -214,6 +214,7 @@ static Boolean boolForKey(CFStringRef key, Boolean defaultValue) {
         }
         dispatch_async(dispatch_get_main_queue(), ^{
             [self.alertItem setMessage:myInfo];
+            [self.alertItem show];
         });
     });
 }
@@ -221,10 +222,12 @@ static Boolean boolForKey(CFStringRef key, Boolean defaultValue) {
 //perform iOS 7 part
 
 -(void)performiOS7Part {
+
     [self settingsChanged]; //get initial values
-    [self grabInformationInBackground];
 
     self.alertItem = [[SBPowerAlertItem alloc] initWithTitle:@"SBPowerAlert" message:@"Loading Information..."];
+
+    [self grabInformationInBackground];
         
     if (showReboot) {
         [self.alertItem addButtonWithTitle:@"Reboot"];
@@ -245,9 +248,8 @@ static Boolean boolForKey(CFStringRef key, Boolean defaultValue) {
     if (showLock) {
         [self.alertItem addButtonWithTitle:@"Lock"];
     }
-    [self.alertItem addButtonWithTitle:@"Cancel"];
     [self.alertItem setDelegate:self];
-    [self.alertItem show];
+    
 }
 
 //perform iOS 8 part
@@ -255,9 +257,10 @@ static Boolean boolForKey(CFStringRef key, Boolean defaultValue) {
 -(void)performiOS8Part {
 
     [self settingsChanged];
-    [self grabInformationInBackground];
 
     self.alertItem = [[SBPowerAlertItem alloc] initWithTitle:@"SBPowerAlert" message:@"Loading Information..."];
+
+    [self grabInformationInBackground];
 
     if (showReboot) {
         [self.alertItem addAction:[objc_getClass("UIAlertAction") actionWithTitle:@"Reboot" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
@@ -290,8 +293,6 @@ static Boolean boolForKey(CFStringRef key, Boolean defaultValue) {
                                            [[LAActivator sharedInstance] sendEvent:nil toListenerWithName:@"libactivator.system.sleepbutton"];
                                         }]];
     }
-
-    [self.alertItem show];
     
 }
 
