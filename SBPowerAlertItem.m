@@ -30,11 +30,11 @@
 
 -(void)setMessage:(NSString *)message {
 	if (iOS8) {
-		[[self alertController] setMessage:message];
+		[self setAlertMessage:message];
+		[[self alertSheet] setMessage:self.alertMessage];
 	} else if (iOS7) {
 		[self setAlertMessage:message];
 		[[self alertSheet] setMessage:self.alertMessage];
-		[[self alertSheet] setNeedsLayout];
 	}
 }
 
