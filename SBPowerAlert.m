@@ -289,7 +289,7 @@ static Boolean boolForKey(CFStringRef key, Boolean defaultValue) {
     }
         
     if (showLock) {
-        [self.alertItem addAction:[objc_getClass("UIAlertAction") actionWithTitle:@"Respring" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+        [self.alertItem addAction:[objc_getClass("UIAlertAction") actionWithTitle:@"Lock" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
                                            [[LAActivator sharedInstance] sendEvent:nil toListenerWithName:@"libactivator.system.sleepbutton"];
                                         }]];
     }
