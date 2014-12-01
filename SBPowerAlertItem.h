@@ -3,6 +3,7 @@
 @interface SBAlertItemsController : NSObject
 +(id)sharedInstance;
 -(void)activateAlertItem:(id)arg1;
+-(void)deactivateAlertItem:(id)arg1;
 @end
 
 @interface SBAlertItem : NSObject <UIAlertViewDelegate>

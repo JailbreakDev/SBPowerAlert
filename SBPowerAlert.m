@@ -35,21 +35,70 @@ static void settingsChangedCallBack(CFNotificationCenterRef center, void *observ
 }
 
 //gets available memory for 32 and 64bit
-long long getAvailableMemory() {
+NSInteger getFreeRAM() {
     vm_size_t pageSize;
     host_page_size(mach_host_self(),&pageSize);
 #ifdef __LP64__
     struct vm_statistics64 vmStats;
     mach_msg_type_number_t infoCount = sizeof(vmStats);
     host_statistics64(mach_host_self(), HOST_VM_INFO64, (host_info64_t)&vmStats, &infoCount);
-    int availMem = vmStats.free_count + vmStats.inactive_count;
-    return (availMem * pageSize);
+    return (vmStats.free_count * pageSize);
 #else
     struct vm_statistics vmStats;
     mach_msg_type_number_t infoCount = sizeof(vmStats);
     host_statistics(mach_host_self(), HOST_VM_INFO, (host_info_t)&vmStats, &infoCount);
-    int availMem = vmStats.free_count + vmStats.inactive_count;
-    return (availMem * pageSize);
+    return (vmStats.free_count * pageSize);
+#endif
+    
+}
+
+NSInteger getActivelyUsedRAM() {
+    vm_size_t pageSize;
+    host_page_size(mach_host_self(),&pageSize);
+#ifdef __LP64__
+    struct vm_statistics64 vmStats;
+    mach_msg_type_number_t infoCount = sizeof(vmStats);
+    host_statistics64(mach_host_self(), HOST_VM_INFO64, (host_info64_t)&vmStats, &infoCount);
+    return (vmStats.active_count * pageSize);
+#else
+    struct vm_statistics vmStats;
+    mach_msg_type_number_t infoCount = sizeof(vmStats);
+    host_statistics(mach_host_self(), HOST_VM_INFO, (host_info_t)&vmStats, &infoCount);
+    return (vmStats.active_count * pageSize);
+#endif
+    
+}
+
+NSInteger getInactiveRAM() {
+    vm_size_t pageSize;
+    host_page_size(mach_host_self(),&pageSize);
+#ifdef __LP64__
+    struct vm_statistics64 vmStats;
+    mach_msg_type_number_t infoCount = sizeof(vmStats);
+    host_statistics64(mach_host_self(), HOST_VM_INFO64, (host_info64_t)&vmStats, &infoCount);
+    return (vmStats.inactive_count * pageSize);
+#else
+    struct vm_statistics vmStats;
+    mach_msg_type_number_t infoCount = sizeof(vmStats);
+    host_statistics(mach_host_self(), HOST_VM_INFO, (host_info_t)&vmStats, &infoCount);
+    return (vmStats.inactive_count * pageSize);
+#endif
+    
+}
+
+NSInteger getWiredRAM() {
+    vm_size_t pageSize;
+    host_page_size(mach_host_self(),&pageSize);
+#ifdef __LP64__
+    struct vm_statistics64 vmStats;
+    mach_msg_type_number_t infoCount = sizeof(vmStats);
+    host_statistics64(mach_host_self(), HOST_VM_INFO64, (host_info64_t)&vmStats, &infoCount);
+    return (vmStats.wire_count * pageSize);
+#else
+    struct vm_statistics vmStats;
+    mach_msg_type_number_t infoCount = sizeof(vmStats);
+    host_statistics(mach_host_self(), HOST_VM_INFO, (host_info_t)&vmStats, &infoCount);
+    return (vmStats.wire_count * pageSize);
 #endif
     
 }
@@ -202,7 +251,12 @@ static Boolean boolForKey(CFStringRef key, Boolean defaultValue) {
         }
                 
         if (showRam) {
-            [myInfo appendFormat:@"%@ of RAM available\n",[NSByteCountFormatter stringFromByteCount:getAvailableMemory() countStyle:NSByteCountFormatterCountStyleMemory]];
+            NSString *freeRAM = [NSByteCountFormatter stringFromByteCount:getFreeRAM() countStyle:NSByteCountFormatterCountStyleMemory];
+            NSString *activeRAM = [NSByteCountFormatter stringFromByteCount:getActivelyUsedRAM() countStyle:NSByteCountFormatterCountStyleMemory];
+            NSString *inactiveRAM = [NSByteCountFormatter stringFromByteCount:getInactiveRAM() countStyle:NSByteCountFormatterCountStyleMemory];
+            NSString *wiredRAM = [NSByteCountFormatter stringFromByteCount:getWiredRAM() countStyle:NSByteCountFormatterCountStyleMemory];
+            NSString *installedRAM = [NSByteCountFormatter stringFromByteCount:getFreeRAM()+getActivelyUsedRAM()+getInactiveRAM()+getWiredRAM() countStyle:NSByteCountFormatterCountStyleMemory];
+            [myInfo appendFormat:@"Free RAM: %@\nActive RAM: %@\nInactive RAM: %@\nWired RAM: %@\nInstalled RAM: %@\n",freeRAM,activeRAM,inactiveRAM,wiredRAM,installedRAM];
         }
             
         if (showStorage) { 
@@ -264,18 +318,21 @@ static Boolean boolForKey(CFStringRef key, Boolean defaultValue) {
 
     if (showReboot) {
         [self.alertItem addAction:[objc_getClass("UIAlertAction") actionWithTitle:@"Reboot" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+                                           [self dismiss];
                                            [[UIApplication sharedApplication] _rebootNow];
                                         }]];
     }
         
     if (showPowerOff) { 
         [self.alertItem addAction:[objc_getClass("UIAlertAction") actionWithTitle:@"Power Off" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+                                           [self dismiss];
                                            [[UIApplication sharedApplication] _powerDownNow];
                                         }]];
     }
 
     if (showRespring) {
         [self.alertItem addAction:[objc_getClass("UIAlertAction") actionWithTitle:@"Respring" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+                                           [self dismiss];
                                            [[UIApplication sharedApplication] _relaunchSpringBoardNow];
                                         }]];
     }
@@ -284,12 +341,14 @@ static Boolean boolForKey(CFStringRef key, Boolean defaultValue) {
         [self.alertItem addAction:[objc_getClass("UIAlertAction") actionWithTitle:@"Safe Mode" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
                                             FILE *tmp = fopen("/var/mobile/Library/Preferences/com.saurik.mobilesubstrate.dat","w");
                                             fclose(tmp);
+                                            [self dismiss];
                                             [[UIApplication sharedApplication] _relaunchSpringBoardNow];
                                         }]];
     }
         
     if (showLock) {
         [self.alertItem addAction:[objc_getClass("UIAlertAction") actionWithTitle:@"Lock" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+                                           [self dismiss];
                                            [[LAActivator sharedInstance] sendEvent:nil toListenerWithName:@"libactivator.system.sleepbutton"];
                                         }]];
     }

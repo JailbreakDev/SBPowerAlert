@@ -1,6 +1,6 @@
 ARCHS = armv7 arm64
 TARGET := iphone:clang:8.1
-THEOS_DEVICE_IP = iPad
+THEOS_DEVICE_IP = iPhone
 include theos/makefiles/common.mk
 
 TWEAK_NAME = SBPowerAlert

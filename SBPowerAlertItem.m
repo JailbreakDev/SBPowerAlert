@@ -65,4 +65,9 @@
 	[[objc_getClass("SBAlertItem") _alertItemsController] activateAlertItem:self];
 }
 
+-(void)dismiss {
+	[[objc_getClass("SBAlertItem") _alertItemsController] deactivateAlertItem:self];
+	[super dismiss];
+}
+
 @end
