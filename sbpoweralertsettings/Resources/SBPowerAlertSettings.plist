@@ -120,6 +120,20 @@
 		</dict>
 		<dict>
 			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.sharedRoutine.sbpoweralert</string>
+			<key>key</key>
+			<string>kShowTraffic</string>
+			<key>label</key>
+			<string>Show Trafffic</string>
+			<key>PostNotification</key>
+			<string>com.sharedRoutine.settingschanged</string>
+		</dict>
+		<dict>
+			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>label</key>
 			<string>Button Settings</string>
@@ -200,7 +214,7 @@
 			<key>label</key>
 			<string>Support Me</string>
 			<key>footerText</key>
-			<string>If you like SBPowerAlert you can support me using this Button.</string>
+			<string>If you like SBPowerAlert you can support me using this button...or you can support me by buying my latest Tweak</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -211,6 +225,10 @@
 			<string>Support Me</string>
 			<key>icon</key>
 			<string>paypal</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
 		</dict>
 	</array>
 	<key>title</key>

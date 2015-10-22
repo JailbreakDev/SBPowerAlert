@@ -1,4 +1,4 @@
-ARCHS = armv7 arm64
+exort ARCHS = armv7 arm64
 include theos/makefiles/common.mk
 
 BUNDLE_NAME = SBPowerAlertSettings
@@ -6,7 +6,7 @@ SBPowerAlertSettings_FILES = SBPowerAlertSettings.mm
 SBPowerAlertSettings_INSTALL_PATH = /Library/PreferenceBundles
 SBPowerAlertSettings_FRAMEWORKS = UIKit
 SBPowerAlertSettings_PRIVATE_FRAMEWORKS = Preferences
-SBPowerAlertSettings_CFLAGS = -w
+SBPowerAlertSettings_CFLAGS = -fobjc-arc
 
 include $(THEOS_MAKE_PATH)/bundle.mk
 

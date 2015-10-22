@@ -8,6 +8,7 @@ static BOOL showWifiIP;
 static BOOL showRam;
 static BOOL showStorage;
 static BOOL showVersion;
+static BOOL showTraffic;
 
 //buttons
 static BOOL showReboot;
@@ -19,9 +20,18 @@ static BOOL showLock;
 //SpringBoard methods to reboot, power down and respring
 @interface UIApplication(SBAdditions)
 -(void)_rebootNow;
+-(void)_rebootNow:(BOOL)x;
 -(void)_powerDownNow;
 -(void)_relaunchSpringBoardNow;
 @end
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+void CTRegistrationDataCounterGetAllStatistics(int __unknown0, CGFloat *bytesSent, CGFloat *bytesReceived);
+#ifdef __cplusplus
+}
+#endif
 
 @class SBPowerAlertItem;
 @interface SBPowerAlert : NSObject <LAListener, UIAlertViewDelegate>
@@ -34,73 +44,113 @@ static void settingsChangedCallBack(CFNotificationCenterRef center, void *observ
     [(__bridge SBPowerAlert *)observer settingsChanged];
 }
 
-//gets available memory for 32 and 64bit
-NSInteger getFreeRAM() {
-    vm_size_t pageSize;
-    host_page_size(mach_host_self(),&pageSize);
-#ifdef __LP64__
+struct vm_statistics64 stats64() {
     struct vm_statistics64 vmStats;
     mach_msg_type_number_t infoCount = sizeof(vmStats);
     host_statistics64(mach_host_self(), HOST_VM_INFO64, (host_info64_t)&vmStats, &infoCount);
-    return (vmStats.free_count * pageSize);
-#else
+    return vmStats;
+}
+
+struct vm_statistics stats32() {
     struct vm_statistics vmStats;
     mach_msg_type_number_t infoCount = sizeof(vmStats);
     host_statistics(mach_host_self(), HOST_VM_INFO, (host_info_t)&vmStats, &infoCount);
-    return (vmStats.free_count * pageSize);
+    return vmStats;
+}
+
+NSInteger getRam(natural_t ram) {
+    vm_size_t pageSize;
+    host_page_size(mach_host_self(),&pageSize);
+    return (ram * pageSize);
+}
+
+//gets available memory for 32 and 64bit
+NSInteger getFreeRAM() {
+#ifdef __LP64__
+    struct vm_statistics64 vmStats = stats64();
+    return getRam(vmStats.free_count);
+#else
+    struct vm_statistics vmStats = stats32();
+    return getRam(vmStats.free_count);
 #endif
-    
 }
 
 NSInteger getActivelyUsedRAM() {
-    vm_size_t pageSize;
-    host_page_size(mach_host_self(),&pageSize);
 #ifdef __LP64__
-    struct vm_statistics64 vmStats;
-    mach_msg_type_number_t infoCount = sizeof(vmStats);
-    host_statistics64(mach_host_self(), HOST_VM_INFO64, (host_info64_t)&vmStats, &infoCount);
-    return (vmStats.active_count * pageSize);
+    struct vm_statistics64 vmStats = stats64();
+    return getRam(vmStats.active_count);
 #else
-    struct vm_statistics vmStats;
-    mach_msg_type_number_t infoCount = sizeof(vmStats);
-    host_statistics(mach_host_self(), HOST_VM_INFO, (host_info_t)&vmStats, &infoCount);
-    return (vmStats.active_count * pageSize);
+    struct vm_statistics vmStats = stats32();
+    return getRam(vmStats.active_count);
 #endif
-    
 }
 
 NSInteger getInactiveRAM() {
-    vm_size_t pageSize;
-    host_page_size(mach_host_self(),&pageSize);
 #ifdef __LP64__
-    struct vm_statistics64 vmStats;
-    mach_msg_type_number_t infoCount = sizeof(vmStats);
-    host_statistics64(mach_host_self(), HOST_VM_INFO64, (host_info64_t)&vmStats, &infoCount);
-    return (vmStats.inactive_count * pageSize);
+    struct vm_statistics64 vmStats = stats64();
+    return getRam(vmStats.inactive_count);
 #else
-    struct vm_statistics vmStats;
-    mach_msg_type_number_t infoCount = sizeof(vmStats);
-    host_statistics(mach_host_self(), HOST_VM_INFO, (host_info_t)&vmStats, &infoCount);
-    return (vmStats.inactive_count * pageSize);
+    struct vm_statistics vmStats = stats32();
+    return getRam(vmStats.inactive_count);
+#endif
+}
+
+NSInteger getWiredRAM() {
+#ifdef __LP64__
+    struct vm_statistics64 vmStats = stats64();
+    return getRam(vmStats.wire_count);
+#else
+    struct vm_statistics vmStats = stats32();
+    return getRam(vmStats.wire_count);
 #endif
     
 }
 
-NSInteger getWiredRAM() {
-    vm_size_t pageSize;
-    host_page_size(mach_host_self(),&pageSize);
-#ifdef __LP64__
-    struct vm_statistics64 vmStats;
-    mach_msg_type_number_t infoCount = sizeof(vmStats);
-    host_statistics64(mach_host_self(), HOST_VM_INFO64, (host_info64_t)&vmStats, &infoCount);
-    return (vmStats.wire_count * pageSize);
-#else
-    struct vm_statistics vmStats;
-    mach_msg_type_number_t infoCount = sizeof(vmStats);
-    host_statistics(mach_host_self(), HOST_VM_INFO, (host_info_t)&vmStats, &infoCount);
-    return (vmStats.wire_count * pageSize);
-#endif
+NSArray *getDataCounters() {
+    BOOL   success;
+    struct ifaddrs *addrs;
+    const struct ifaddrs *cursor;
+    const struct if_data *networkStatisc;
     
+    int WiFiSent = 0;
+    int WiFiReceived = 0;
+    int WWANSent = 0;
+    int WWANReceived = 0;
+    
+    NSString *name=[[NSString alloc]init];
+    
+    success = getifaddrs(&addrs) == 0;
+    if (success)
+    {
+        cursor = addrs;
+        while (cursor != NULL)
+        {
+            name=[NSString stringWithFormat:@"%s",cursor->ifa_name];
+            
+            if (cursor->ifa_addr->sa_family == AF_LINK)
+            {
+                if ([name hasPrefix:@"en"])
+                {
+                    networkStatisc = (const struct if_data *) cursor->ifa_data;
+                    WiFiSent+=networkStatisc->ifi_obytes;
+                    WiFiReceived+=networkStatisc->ifi_ibytes;
+                }
+                
+                if ([name hasPrefix:@"pdp_ip"])
+                {
+                    networkStatisc = (const struct if_data *) cursor->ifa_data;
+                    WWANSent+=networkStatisc->ifi_obytes;
+                    WWANReceived+=networkStatisc->ifi_ibytes;
+                }
+            }
+            
+            cursor = cursor->ifa_next;
+        }
+        
+        freeifaddrs(addrs);
+    }
+    
+    return [NSArray arrayWithObjects:[NSNumber numberWithInt:-(WiFiSent)], [NSNumber numberWithInt:WiFiReceived],[NSNumber numberWithInt:WWANSent],[NSNumber numberWithInt:WWANReceived], nil];
 }
 
 //gets local IP Address
@@ -172,6 +222,7 @@ static Boolean boolForKey(CFStringRef key, Boolean defaultValue) {
 	showRam = boolForKey(CFSTR("kShowRAM"),TRUE);
 	showStorage = boolForKey(CFSTR("kShowStorage"),TRUE);
 	showVersion = boolForKey(CFSTR("kShowiOSVer"),FALSE);
+    showTraffic = boolForKey(CFSTR("kShowTraffic"),FALSE);
 
     showReboot = boolForKey(CFSTR("kShowRebootButton"),TRUE);
     showPowerOff = boolForKey(CFSTR("kShowPowerOffButton"),TRUE);
@@ -200,9 +251,13 @@ static Boolean boolForKey(CFStringRef key, Boolean defaultValue) {
         [self dismiss];
         return;
     }
-    
+
     if ([btnTitle isEqualToString:@"Reboot"]) {
-        [[UIApplication sharedApplication] _rebootNow];
+        if ([[UIApplication sharedApplication] respondsToSelector:(@selector(_rebootNow))]) {
+            [[UIApplication sharedApplication] _rebootNow];
+        } else if ([[UIApplication sharedApplication] respondsToSelector:@selector(_rebootNow:)]) {
+            [[UIApplication sharedApplication] _rebootNow:FALSE];
+        }
     }
     
     if ([btnTitle isEqualToString:@"Power Off"]) {
@@ -214,8 +269,7 @@ static Boolean boolForKey(CFStringRef key, Boolean defaultValue) {
     }
     
     if ([btnTitle isEqualToString:@"Safe Mode"]) {
-        FILE *tmp = fopen("/var/mobile/Library/Preferences/com.saurik.mobilesubstrate.dat","w");
-        fclose(tmp);
+        fclose(fopen("/var/mobile/Library/Preferences/com.saurik.mobilesubstrate.dat","w"));
         [[UIApplication sharedApplication] _relaunchSpringBoardNow];
     }
     
@@ -236,6 +290,7 @@ static Boolean boolForKey(CFStringRef key, Boolean defaultValue) {
 
         CFStringRef wifiAddr = MGCopyAnswer(kMGWifiAddress);
         CFStringRef productVersion = MGCopyAnswer(kMGProductVersion);
+        CFStringRef productType = MGCopyAnswer(kMGProductType);
         CFStringRef deviceName = MGCopyAnswer(kMGUserAssignedDeviceName);
 
         if (showDataIP) {
@@ -249,13 +304,22 @@ static Boolean boolForKey(CFStringRef key, Boolean defaultValue) {
         if (showWifiIP) {
             [myInfo appendFormat:@"Wi-Fi IP Address: %@\n",getIPAddress()];
         }
+
+        if (showTraffic) {
+            NSArray *dataCounts = getDataCounters();
+            NSNumber *wifiSent = dataCounts[0];
+            NSNumber *wifiReceived = dataCounts[1];
+            NSString *sentBytes = [NSByteCountFormatter stringFromByteCount:[wifiSent longLongValue] countStyle:NSByteCountFormatterCountStyleBinary];
+            NSString *receivedBytes = [NSByteCountFormatter stringFromByteCount:[wifiReceived longLongValue] countStyle:NSByteCountFormatterCountStyleBinary];
+            [myInfo appendFormat:@"Wifi Data Sent: %@\nWifi Data Received: %@\n",sentBytes,receivedBytes];
+        }
                 
         if (showRam) {
-            NSString *freeRAM = [NSByteCountFormatter stringFromByteCount:getFreeRAM() countStyle:NSByteCountFormatterCountStyleMemory];
-            NSString *activeRAM = [NSByteCountFormatter stringFromByteCount:getActivelyUsedRAM() countStyle:NSByteCountFormatterCountStyleMemory];
-            NSString *inactiveRAM = [NSByteCountFormatter stringFromByteCount:getInactiveRAM() countStyle:NSByteCountFormatterCountStyleMemory];
-            NSString *wiredRAM = [NSByteCountFormatter stringFromByteCount:getWiredRAM() countStyle:NSByteCountFormatterCountStyleMemory];
-            NSString *installedRAM = [NSByteCountFormatter stringFromByteCount:getFreeRAM()+getActivelyUsedRAM()+getInactiveRAM()+getWiredRAM() countStyle:NSByteCountFormatterCountStyleMemory];
+            NSString *freeRAM = [NSByteCountFormatter stringFromByteCount:getFreeRAM() countStyle:NSByteCountFormatterCountStyleBinary];
+            NSString *activeRAM = [NSByteCountFormatter stringFromByteCount:getActivelyUsedRAM() countStyle:NSByteCountFormatterCountStyleBinary];
+            NSString *inactiveRAM = [NSByteCountFormatter stringFromByteCount:getInactiveRAM() countStyle:NSByteCountFormatterCountStyleBinary];
+            NSString *wiredRAM = [NSByteCountFormatter stringFromByteCount:getWiredRAM() countStyle:NSByteCountFormatterCountStyleBinary];
+            NSString *installedRAM = [NSByteCountFormatter stringFromByteCount:[[NSProcessInfo processInfo] physicalMemory] countStyle:NSByteCountFormatterCountStyleBinary];
             [myInfo appendFormat:@"Free RAM: %@\nActive RAM: %@\nInactive RAM: %@\nWired RAM: %@\nInstalled RAM: %@\n",freeRAM,activeRAM,inactiveRAM,wiredRAM,installedRAM];
         }
             
@@ -264,7 +328,7 @@ static Boolean boolForKey(CFStringRef key, Boolean defaultValue) {
         }
 
         if (showVersion) {
-            [myInfo appendFormat:@"%@ is running iOS %@\n",deviceName, productVersion];
+            [myInfo appendFormat:@"%@ (%@) is running iOS %@\n",deviceName, productType, productVersion];
         }
         dispatch_async(dispatch_get_main_queue(), ^{
             [self.alertItem setMessage:myInfo];
@@ -319,7 +383,11 @@ static Boolean boolForKey(CFStringRef key, Boolean defaultValue) {
     if (showReboot) {
         [self.alertItem addAction:[objc_getClass("UIAlertAction") actionWithTitle:@"Reboot" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
                                            [self dismiss];
-                                           [[UIApplication sharedApplication] _rebootNow];
+                                           if ([[UIApplication sharedApplication] respondsToSelector:@selector(_rebootNow)]) {
+                                                [[UIApplication sharedApplication] _rebootNow];
+                                            } else if ([[UIApplication sharedApplication] respondsToSelector:@selector(_rebootNow:)]) {
+                                                [[UIApplication sharedApplication] _rebootNow:FALSE];
+                                            }
                                         }]];
     }
         

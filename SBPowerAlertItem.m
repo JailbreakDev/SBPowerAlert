@@ -46,7 +46,7 @@
 		for (UIAlertAction *action in self.actions) {
 			[[self alertController] addAction:action];
 		}
-		[[self alertController] addAction:[objc_getClass("UIAlertAction") actionWithTitle:@"Cancel" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+		[[self alertController] addAction:[objc_getClass("UIAlertAction") actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:^(UIAlertAction *action) {
                                             [self dismiss];
                                         }]];
 		[[self alertController] setModalPresentationStyle:UIModalPresentationFormSheet];
